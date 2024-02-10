@@ -1,7 +1,8 @@
 from pprint import pprint
 
-import pdb_parser, pdb_analyzer
-from src.atom_distance import calculate_distance
+import pdb_analyzer
+import pdb_parser
+import atom_distance as ad
 
 
 def main():
@@ -24,8 +25,8 @@ def main():
     pprint(aa_per_chain)
 
     # Manipulation of the pdb file
-    print(f"shortest: {calculate_distance(pdb_data, "atom", [["A", "8"], ["A", "12"]])}")
-    print(f"centroid: {calculate_distance(pdb_data, "centroid", [["A", "8"], ["A", "12"]])}")
+    print(f"shortest: {ad.calculate_distance(pdb_data, "atom", [["A", "8"], ["A", "12"]])}")
+    print(f"centroid: {ad.calculate_distance(pdb_data, "centroid", [["A", "8"], ["A", "12"]])}")
 
 
 if __name__ == "__main__":

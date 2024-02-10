@@ -1,8 +1,3 @@
-from pprint import pprint
-
-from pdb_parser import pdb_parser_optimized
-
-
 def euclidean_distance(coordinate_1: list, coordinate_2: list):
     """
     This function takes two lists as input, each representing a point in 3D space with x, y, and z coordinates.
