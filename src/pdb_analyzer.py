@@ -52,3 +52,20 @@ def total_aa_per_chain(pdb_data: dict, aa: str) -> dict:
                 total += 1
         response[aa][chain] = total
     return response
+
+
+def residue_list(pdb_data: dict) -> list:
+    """
+    This function generates a list of all residues in all chains of the pdb data.
+
+    :param pdb_data: A dictionary representing the pdb data. It is expected to have a key "chains"
+                     which contains another dictionary. The keys of this inner dictionary are the
+                     chain names and the values are dictionaries representing residues in the chain.
+
+    :return: A list of dictionaries. Each dictionary represents a residue in a chain.
+    """
+    response = []
+    for chain in pdb_data["chains"]:
+        for residue in pdb_data[chain]:
+            response.append(pdb_data[chain][residue])
+    return response

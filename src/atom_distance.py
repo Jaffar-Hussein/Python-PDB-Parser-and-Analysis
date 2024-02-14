@@ -8,9 +8,9 @@ def euclidean_distance(coordinate_1: list, coordinate_2: list):
     :return: float: The Euclidean distance between the two points.
     """
     return (
-        ((coordinate_1[0] - coordinate_2[0]) ** 2)
-        + ((coordinate_1[1] - coordinate_2[1]) ** 2)
-        + ((coordinate_1[2] - coordinate_2[2]) ** 2)
+            ((coordinate_1[0] - coordinate_2[0]) ** 2)
+            + ((coordinate_1[1] - coordinate_2[1]) ** 2)
+            + ((coordinate_1[2] - coordinate_2[2]) ** 2)
     ) ** 0.5
 
 
@@ -50,24 +50,25 @@ def centroid_searcher(residue: dict) -> list:
     return [total_x / atom_count, total_y / atom_count, total_z / atom_count]
 
 
-def calculate_distance(pdb_data: dict, mode: str, residues: list) -> float:
+def calculate_distance(mode: str, first_residue: list, second_residue: list) -> float:
     """
-    Calculate the distance between two residues based on the specified mode.
-    This function calculates the distance between two residues in a protein structure. The residues are specified as
-    a list of tuples, where each tuple contains the chain identifier and the residue number. The mode parameter
-    determines how the distance is calculated: - "atom": The function calculates all pairwise distances between atoms
-    of the two residues and returns the minimum distance. - "centroid": The function calculates the distance between
-    the centroids of the two residues.
+    This function calculates the minimum distance between all pairs of atoms in two given residues or the distance between their centroids.
 
-    :param pdb_data: A dictionary representing the protein structure. The keys are chain identifiers and the values
-    are dictionaries, where the keys are residue numbers and the values are dictionaries representing the residue.
-    :param mode: A string specifying the mode of distance calculation. It can be either "atom" or "centroid".
-    :param residues: A list of two tuples, where each tuple contains the chain identifier and the residue number of a
-    residue.
-    :return: The calculated distance between the two residues.
+    If the mode is "atom", the function iterates over each atom in the first residue and each atom in the second residue, and calculates the
+    Euclidean distance between them using the 'euclidean_distance' and 'coordinate_extractor' functions. The minimum of these distances is returned.
+
+    If the mode is "centroid", the function calculates the centroids of the two residues using the 'centroid_searcher' function, and then calculates
+    the Euclidean distance between these centroids using the 'euclidean_distance' function. This distance is returned.
+
+    :param mode: A string that specifies the mode of distance calculation. It can be "atom" or "centroid".
+    :param first_residue: A list of dictionaries, each representing an atom in the first residue. The keys are atom names and the values are dictionaries
+    containing the atom's x, y, and z coordinates.
+    :param second_residue: A list of dictionaries, each representing an atom in the second residue. The keys are atom names and the values are dictionaries
+    containing the atom's x, y, and z coordinates.
+
+    :return: A float representing the minimum distance between all pairs of atoms in the two residues (if mode is "atom"), or the distance between the centroids
+    of the two residues (if mode is "centroid").
     """
-    first_residue = pdb_data[residues[0][0]][residues[0][1]]
-    second_residue = pdb_data[residues[1][0]][residues[1][1]]
     if mode == "atom":
         distances = []
         for atom_one in first_residue["atomlist"]:
@@ -82,3 +83,30 @@ def calculate_distance(pdb_data: dict, mode: str, residues: list) -> float:
         centroid_1 = centroid_searcher(first_residue)
         centroid_2 = centroid_searcher(second_residue)
         return euclidean_distance(centroid_1, centroid_2)
+
+
+def residue_residue(residue1: list, residue2: list) -> list:
+    """
+    This function calculates the minimum distance between all pairs of residues in two given sets of residues.
+
+    The function iterates over each residue in the first set and each residue in the second set, and calculates the
+    minimum distance between them using the 'calculate_distance' function. The distances are stored in a 2D list (contact_list),
+    where the element at index [i][j] represents the minimum distance between the i-th residue in the first set and the j-th
+    residue in the second set.
+
+    :param residue1: A dictionary representing a residue. The keys are atom names and the values are dictionaries
+    containing the atom's x, y, and z coordinates.
+    :param residue2: A dictionary representing a residue. The keys are atom names and the values are dictionaries
+    containing the atom's x, y, and z coordinates.
+
+    :return: A 2D list (contact_list) where the element at index [i][j] represents the minimum distance between the i-th
+    residue in the first set and the j-th residue in the second set.
+    """
+    contact_list = []
+    for residue_one in residue1:
+        distances = []
+        for residue_two in residue2:
+            distance = calculate_distance("atom", residue_one, residue_two)
+            distances.append(int(distance))
+        contact_list.append(distances)
+    return contact_list
