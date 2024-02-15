@@ -69,3 +69,20 @@ def residue_list(pdb_data: dict) -> list:
         for residue in pdb_data[chain]:
             response.append(pdb_data[chain][residue])
     return response
+
+
+def residues_in_chain(pdb_data: dict, chain: str) -> list:
+    """
+    This function generates a list of all residues in a given chain of the pdb data.
+
+    :param pdb_data: A dictionary representing the pdb data. It is expected to have a key "chains"
+                     which contains another dictionary. The keys of this inner dictionary are the
+                     chain names and the values are dictionaries representing residues in the chain.
+    :param chain: A string representing the name of the chain for which the residues are to be listed.
+
+    :return: A list of dictionaries. Each dictionary represents a residue in the given chain.
+    """
+    response = []
+    for residue in pdb_data[chain]:
+        response.append(pdb_data[chain][residue])
+    return response

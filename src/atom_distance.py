@@ -85,7 +85,7 @@ def calculate_distance(mode: str, first_residue: list, second_residue: list) -> 
         return euclidean_distance(centroid_1, centroid_2)
 
 
-def residue_residue(residue1: list, residue2: list) -> list:
+def residue_residue(residue1: list, residue2: list,threshold:int = 0) -> list:
     """
     This function calculates the minimum distance between all pairs of residues in two given sets of residues.
 
@@ -103,10 +103,16 @@ def residue_residue(residue1: list, residue2: list) -> list:
     residue in the first set and the j-th residue in the second set.
     """
     contact_list = []
+    border_residues = []
     for residue_one in residue1:
         distances = []
         for residue_two in residue2:
             distance = calculate_distance("atom", residue_one, residue_two)
-            distances.append(int(distance))
+            if not threshold:
+                distances.append(int(distance))
+            else:
+                if distance < threshold:
+                    border_residues.append(distance)
         contact_list.append(distances)
-    return contact_list
+
+    return border_residues if border_residues else contact_list
