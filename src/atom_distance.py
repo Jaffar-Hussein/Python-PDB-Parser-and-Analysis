@@ -1,3 +1,7 @@
+from pprint import pprint
+import numpy as np
+
+
 def euclidean_distance(coordinate_1: list, coordinate_2: list):
     """
     This function takes two lists as input, each representing a point in 3D space with x, y, and z coordinates.
@@ -7,11 +11,7 @@ def euclidean_distance(coordinate_1: list, coordinate_2: list):
     :param coordinate_2: The second point, represented as a list [x,y,z].
     :return: float: The Euclidean distance between the two points.
     """
-    return (
-            ((coordinate_1[0] - coordinate_2[0]) ** 2)
-            + ((coordinate_1[1] - coordinate_2[1]) ** 2)
-            + ((coordinate_1[2] - coordinate_2[2]) ** 2)
-    ) ** 0.5
+    return np.linalg.norm(np.subtract(coordinate_1, coordinate_2))
 
 
 def coordinate_extractor(residue: dict, atom: str) -> list:
@@ -25,11 +25,10 @@ def coordinate_extractor(residue: dict, atom: str) -> list:
     extracted.
     :return: A list representing the x, y, and z coordinates of the specified atom.
     """
-    n = residue[atom]
-    return [n["x"], n["y"], n["z"]]
+    return [residue[atom]['x'], residue[atom]['y'], residue[atom]['z']]
 
 
-def centroid_searcher(residue: dict) -> list:
+def centroid_searcher(residue: dict):
     """
     Calculate the centroid of a residue.
     This function calculates the centroid (geometric center) of a residue in a protein structure. The residue is
@@ -41,78 +40,64 @@ def centroid_searcher(residue: dict) -> list:
     :return: A list representing the x, y, and z coordinates of the
     centroid.
     """
-    total_x = total_y = total_z = 0.0
-    atom_count = len(residue["atomlist"])
-    for atom in residue["atomlist"]:
-        total_x += residue[atom]["x"]
-        total_y += residue[atom]["y"]
-        total_z += residue[atom]["z"]
-    return [total_x / atom_count, total_y / atom_count, total_z / atom_count]
+    coordinates = [coordinate_extractor(residue, atom) for atom in residue['atomlist']]
+    return np.mean(coordinates, axis=0)
 
 
-def calculate_distance(mode: str, first_residue: list, second_residue: list) -> float:
+def calculate_distance(mode: str, first_residue: dict, second_residue: dict) -> float:
     """
-    This function calculates the minimum distance between all pairs of atoms in two given residues or the distance between their centroids.
-
-    If the mode is "atom", the function iterates over each atom in the first residue and each atom in the second residue, and calculates the
-    Euclidean distance between them using the 'euclidean_distance' and 'coordinate_extractor' functions. The minimum of these distances is returned.
-
-    If the mode is "centroid", the function calculates the centroids of the two residues using the 'centroid_searcher' function, and then calculates
-    the Euclidean distance between these centroids using the 'euclidean_distance' function. This distance is returned.
-
-    :param mode: A string that specifies the mode of distance calculation. It can be "atom" or "centroid".
-    :param first_residue: A list of dictionaries, each representing an atom in the first residue. The keys are atom names and the values are dictionaries
-    containing the atom's x, y, and z coordinates.
-    :param second_residue: A list of dictionaries, each representing an atom in the second residue. The keys are atom names and the values are dictionaries
-    containing the atom's x, y, and z coordinates.
-
-    :return: A float representing the minimum distance between all pairs of atoms in the two residues (if mode is "atom"), or the distance between the centroids
-    of the two residues (if mode is "centroid").
+    Calculate the minimum distance between all pairs of atoms or the distance between centroids of two residues.
     """
+    if mode not in ["atom", "centroid"]:
+        raise ValueError("Mode must be 'atom' or 'centroid'.")
+
     if mode == "atom":
-        distances = []
-        for atom_one in first_residue["atomlist"]:
-            for atom_two in second_residue["atomlist"]:
-                distance = euclidean_distance(
-                    coordinate_extractor(first_residue, atom_one),
-                    coordinate_extractor(second_residue, atom_two),
-                )
-                distances.append(distance)
+        # Extract and store coordinates for all atoms in each residue to prevent repetitive calculations
+        coords1 = [np.array(coordinate_extractor(first_residue, atom)) for atom in first_residue["atomlist"]]
+        coords2 = [np.array(coordinate_extractor(second_residue, atom)) for atom in second_residue["atomlist"]]
+
+        # Calculate all pairwise distances and return the minimum
+        distances = [np.linalg.norm(c1 - c2) for c1 in coords1 for c2 in coords2]
         return min(distances)
+
     elif mode == "centroid":
-        centroid_1 = centroid_searcher(first_residue)
-        centroid_2 = centroid_searcher(second_residue)
-        return euclidean_distance(centroid_1, centroid_2)
+        # Use NumPy for efficient centroid calculation
+        centroid_1 = np.mean(
+            np.array([coordinate_extractor(first_residue, atom) for atom in first_residue["atomlist"]]), axis=0)
+        centroid_2 = np.mean(
+            np.array([coordinate_extractor(second_residue, atom) for atom in second_residue["atomlist"]]), axis=0)
+
+        # Calculate and return the distance between centroids
+        return np.linalg.norm(centroid_1 - centroid_2)
 
 
-def residue_residue(residue1: list, residue2: list,threshold:int = 0) -> list:
+def residue_residue(residue1: list, residue2: list, threshold: float = float('inf'), mode: str = "atom") -> list:
     """
-    This function calculates the minimum distance between all pairs of residues in two given sets of residues.
-
-    The function iterates over each residue in the first set and each residue in the second set, and calculates the
-    minimum distance between them using the 'calculate_distance' function. The distances are stored in a 2D list (contact_list),
-    where the element at index [i][j] represents the minimum distance between the i-th residue in the first set and the j-th
-    residue in the second set.
-
-    :param residue1: A dictionary representing a residue. The keys are atom names and the values are dictionaries
-    containing the atom's x, y, and z coordinates.
-    :param residue2: A dictionary representing a residue. The keys are atom names and the values are dictionaries
-    containing the atom's x, y, and z coordinates.
-
-    :return: A 2D list (contact_list) where the element at index [i][j] represents the minimum distance between the i-th
-    residue in the first set and the j-th residue in the second set.
+    Refactored function description...
     """
     contact_list = []
-    border_residues = []
-    for residue_one in residue1:
-        distances = []
-        for residue_two in residue2:
-            distance = calculate_distance("atom", residue_one, residue_two)
-            if not threshold:
-                distances.append(int(distance))
-            else:
-                if distance < threshold:
-                    border_residues.append(distance)
-        contact_list.append(distances)
 
-    return border_residues if border_residues else contact_list
+    if mode == "atom":
+        for residue_one in residue1:
+            distances = []
+            for residue_two in residue2:
+                if residue_one == residue_two:
+                    # Skip redundant calculations for the same residue
+                    continue
+                distance = calculate_distance(mode, residue_one, residue_two)
+                if distance < threshold:
+                    distances.append(distance)
+            # Append the list of distances for the current residue pair
+            contact_list.append(distances)
+
+    elif mode == "centroid":
+        # Using numpy to calculate centroid distances
+        centroids1 = np.array([centroid_searcher(r) for r in residue1])
+        centroids2 = np.array([centroid_searcher(r) for r in residue2])
+        # Calculate the distances between all centroids
+        distances = np.linalg.norm(centroids1[:, np.newaxis, :] - centroids2[np.newaxis, :, :], axis=2)
+        # Filter the distances by the threshold
+        for dist_row in distances:
+            contact_list.append(dist_row[dist_row < threshold].tolist())
+
+    return contact_list
